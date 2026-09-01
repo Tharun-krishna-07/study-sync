@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
 type Props = {
-  name?: string | null;
-  url?: string | null;
-  presence?: string | null;
-  speaking?: boolean;
-  className?: string;
+  name?: string | null | undefined;
+  url?: string | null | undefined;
+  presence?: string | null | undefined;
+  speaking?: boolean | undefined;
+  className?: string | undefined;
 };
 
 const RING: Record<string, string> = {
@@ -37,7 +37,7 @@ export function UserAvatar({ name, url, presence, speaking, className }: Props) 
           aria-label={presence}
           className={cn(
             "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background",
-            RING[presence] ?? RING.offline,
+            RING[presence] ?? RING['offline'],
           )}
         />
       ) : null}
