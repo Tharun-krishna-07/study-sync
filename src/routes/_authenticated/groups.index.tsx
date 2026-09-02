@@ -272,12 +272,7 @@ function JoinGroupDialog({ onJoined }: { onJoined: (id: string) => void }) {
     setBusy(true);
     try {
       const clean = code.trim().toUpperCase().split("/").pop() ?? "";
-      const { data: found, error } = await supabase
-        .rpc("noop_placeholder" as never)
-        .then(() => ({ data: null, error: null }))
-        .catch(() => ({ data: null, error: null }));
-      void found;
-      void error;
+
 
       const { data: group, error: lookupError } = await supabase
         .from("groups")
