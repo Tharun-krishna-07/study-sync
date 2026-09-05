@@ -22,6 +22,7 @@ import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups.index'
+import { Route as AuthenticatedSessionsSessionIdRouteImport } from './routes/_authenticated/sessions.$sessionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -90,6 +91,12 @@ const AuthenticatedGroupsIndexRoute =
     path: '/groups/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSessionsSessionIdRoute =
+  AuthenticatedSessionsSessionIdRouteImport.update({
+    id: '/sessions/$sessionId',
+    path: '/sessions/$sessionId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
   '/groups/': typeof AuthenticatedGroupsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +125,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
   '/groups': typeof AuthenticatedGroupsIndexRoute
 }
 export interface FileRoutesById {
@@ -133,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
+  '/_authenticated/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
   '/_authenticated/groups/': typeof AuthenticatedGroupsIndexRoute
 }
 export interface FileRouteTypes {
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/tutor'
+    | '/sessions/$sessionId'
     | '/groups/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/tutor'
+    | '/sessions/$sessionId'
     | '/groups'
   id:
     | '__root__'
@@ -178,6 +190,7 @@ export interface FileRouteTypes {
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/tutor'
+    | '/_authenticated/sessions/$sessionId'
     | '/_authenticated/groups/'
   fileRoutesById: FileRoutesById
 }
@@ -281,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGroupsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/sessions/$sessionId': {
+      id: '/_authenticated/sessions/$sessionId'
+      path: '/sessions/$sessionId'
+      fullPath: '/sessions/$sessionId'
+      preLoaderRoute: typeof AuthenticatedSessionsSessionIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -293,6 +313,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
+  AuthenticatedSessionsSessionIdRoute: typeof AuthenticatedSessionsSessionIdRoute
   AuthenticatedGroupsIndexRoute: typeof AuthenticatedGroupsIndexRoute
 }
 
@@ -305,6 +326,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
+  AuthenticatedSessionsSessionIdRoute: AuthenticatedSessionsSessionIdRoute,
   AuthenticatedGroupsIndexRoute: AuthenticatedGroupsIndexRoute,
 }
 
