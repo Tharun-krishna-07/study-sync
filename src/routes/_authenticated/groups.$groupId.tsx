@@ -306,7 +306,7 @@ function MembersTab({ groupId, isAdmin }: { groupId: string; isAdmin: boolean })
 
   async function setRole(id: string, role: string) {
     const { error } = await supabase.from("group_members").update({ role }).eq("id", id);
-    if (error) return toast.error(friendlyError(error, "Couldn't update the role."));
+    if (error) { toast.error(friendlyError(error, "Couldn't update the role.")); return; }
     queryClient.invalidateQueries({ queryKey: ["group-members", groupId] });
     toast.success("Role updated");
   }
@@ -376,7 +376,7 @@ function RoadmapTab({ groupId, isAdmin }: { groupId: string; isAdmin: boolean })
       position: topics.length,
       status: "not_started",
     });
-    if (error) return toast.error(friendlyError(error, "Couldn't add the topic."));
+    if (error) { toast.error(friendlyError(error, "Couldn't add the topic.")); return; }
     setTitle("");
     setDescription("");
     setOpen(false);
@@ -387,7 +387,7 @@ function RoadmapTab({ groupId, isAdmin }: { groupId: string; isAdmin: boolean })
     const next =
       status === "not_started" ? "in_progress" : status === "in_progress" ? "completed" : "not_started";
     const { error } = await supabase.from("topics").update({ status: next }).eq("id", id);
-    if (error) return toast.error(friendlyError(error, "Couldn't update the topic."));
+    if (error) { toast.error(friendlyError(error, "Couldn't update the topic.")); return; }
     queryClient.invalidateQueries({ queryKey: ["topics", groupId] });
   }
 
@@ -509,7 +509,7 @@ function ResourcesTab({ groupId }: { groupId: string }) {
       notes: form.notes.trim() || null,
       added_by: user.id,
     });
-    if (error) return toast.error(friendlyError(error, "Couldn't save the resource."));
+    if (error) { toast.error(friendlyError(error, "Couldn't save the resource.")); return; }
     setForm({ title: "", url: "", resource_type: "link", notes: "" });
     setOpen(false);
     queryClient.invalidateQueries({ queryKey: ["resources", groupId] });
@@ -652,7 +652,7 @@ function SessionsTab({ groupId }: { groupId: string }) {
       recurrence_days: [],
       created_by: user.id,
     });
-    if (error) return toast.error(friendlyError(error, "Couldn't schedule the session."));
+    if (error) { toast.error(friendlyError(error, "Couldn't schedule the session.")); return; }
     setForm({ title: "", description: "", start_time: "", end_time: "", meeting_url: "" });
     setOpen(false);
     queryClient.invalidateQueries({ queryKey: ["group-sessions", groupId] });
