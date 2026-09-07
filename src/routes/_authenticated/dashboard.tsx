@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { UserAvatar } from "@/components/user-avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, firstName } from "@/hooks/useAuth";
-import { fetchMyGroups, fetchLivePresence } from "@/lib/db";
+import { fetchMyGroups, fetchLivePresence, touchStreak } from "@/lib/db";
 import { greeting, timeRange, dayLabel, sessionState, startOfWeek } from "@/lib/format";
 import { MODE_META, type ParticipationMode } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -100,6 +100,14 @@ function Dashboard() {
       void supabase.removeChannel(channel);
     };
   }, [groupIds.join(","), queryClient]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void touchStreak(user.id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    });
+  }, [user?.id, queryClient]);
+
 
   const cards = [
     { label: "Current streak", value: `${profile?.current_streak ?? 0} days`, icon: Flame },
