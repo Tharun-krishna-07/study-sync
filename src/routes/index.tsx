@@ -111,6 +111,10 @@ function Landing() {
           </div>
         ))}
       </section>
+
+      <footer className="border-t border-border/60 px-6 py-8 text-center text-xs text-muted-foreground">
+        StudySync — Learn Together. Stay Connected. Grow Together.
+      </footer>
     </main>
   );
 }
