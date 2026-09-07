@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
+import { GroupInsights } from "@/components/group-insights";
 import { UserAvatar } from "@/components/user-avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -108,6 +109,7 @@ function GroupWorkspace() {
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="doubts">Doubts</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat" className="mt-4">
@@ -127,6 +129,9 @@ function GroupWorkspace() {
         </TabsContent>
         <TabsContent value="doubts" className="mt-4">
           <DoubtsTab groupId={groupId} subject={group.subject} />
+        </TabsContent>
+        <TabsContent value="insights" className="mt-4">
+          <GroupInsights groupId={groupId} groupName={group.name} subject={group.subject} />
         </TabsContent>
       </Tabs>
     </div>
