@@ -101,6 +101,14 @@ function Dashboard() {
     };
   }, [groupIds.join(","), queryClient]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    void touchStreak(user.id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    });
+  }, [user?.id, queryClient]);
+
+
   const cards = [
     { label: "Current streak", value: `${profile?.current_streak ?? 0} days`, icon: Flame },
     { label: "Total XP", value: `${profile?.total_xp ?? 0}`, icon: Zap },
