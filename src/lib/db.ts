@@ -116,3 +116,26 @@ export function friendlyError(err: unknown, fallback: string): string {
   if (/network|fetch failed/i.test(msg)) return "Network issue — please check your connection.";
   return fallback;
 }
+
+/** Updates the signed-in user's daily streak based on their last active day. */
+export async function touchStreak(userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("last_active_day, current_streak, longest_streak")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return;
+
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  if (data.last_active_day === todayKey) return;
+
+  const yesterday = new Date(today.getTime() - 86_400_000).toISOString().slice(0, 10);
+  const current = data.last_active_day === yesterday ? (data.current_streak ?? 0) + 1 : 1;
+  const longest = Math.max(current, data.longest_streak ?? 0);
+
+  await supabase
+    .from("profiles")
+    .update({ last_active_day: todayKey, current_streak: current, longest_streak: longest })
+    .eq("id", userId);
+}
