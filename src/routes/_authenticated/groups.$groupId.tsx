@@ -147,6 +147,7 @@ function ChatTab({ groupId }: { groupId: string }) {
   const queryClient = useQueryClient();
   const [channelId, setChannelId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   const { data: channels = [] } = useQuery({
