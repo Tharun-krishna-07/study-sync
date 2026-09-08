@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Hash, Plus, Send, Sparkles, Volume2 } from "lucide-react";
+import { ArrowLeft, Copy, Hash, Pin, Plus, Reply, Send, Sparkles, Volume2 } from "lucide-react";
+
+const REACTIONS = ["👍", "🔥", "🎯", "😄"] as const;
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
