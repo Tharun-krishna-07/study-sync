@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,30 @@ function SettingsPage() {
   const [interests, setInterests] = useState<string[]>([]);
   const [presence, setPresence] = useState("online");
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function uploadPhoto(file: File) {
+    if (!user) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (error) {
+      setUploading(false);
+      toast.error("We couldn't upload that photo. Try a smaller image.");
+      return;
+    }
+    const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 3650);
+    setUploading(false);
+    if (!data?.signedUrl) {
+      toast.error("Photo uploaded, but we couldn't load it. Please try again.");
+      return;
+    }
+    setAvatarUrl(data.signedUrl);
+    toast.success("Photo uploaded — press Save to apply it.");
+  }
+
 
   useEffect(() => {
     if (!profile) return;
@@ -83,15 +107,32 @@ function SettingsPage() {
         <div className="flex items-center gap-4">
           <UserAvatar name={fullName} url={avatarUrl} presence={presence} className="size-14" />
           <div className="flex-1 space-y-1.5">
-            <Label htmlFor="avatar">Profile photo URL</Label>
-            <Input
-              id="avatar"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://…"
+            <Label htmlFor="avatar">Profile photo</Label>
+            <div className="flex gap-2">
+              <Input
+                id="avatar"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="Paste an image link or upload"
+              />
+              <Button type="button" variant="secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                {uploading ? "Uploading…" : "Upload"}
+              </Button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void uploadPhoto(f);
+              }}
             />
           </div>
         </div>
+
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">

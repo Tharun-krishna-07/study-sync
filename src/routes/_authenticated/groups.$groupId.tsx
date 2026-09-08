@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Hash, Plus, Send, Sparkles, Volume2 } from "lucide-react";
+import { ArrowLeft, Copy, Hash, Pin, Plus, Reply, Send, Sparkles, Volume2 } from "lucide-react";
+
+const REACTIONS = ["👍", "🔥", "🎯", "😄"] as const;
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,6 +147,7 @@ function ChatTab({ groupId }: { groupId: string }) {
   const queryClient = useQueryClient();
   const [channelId, setChannelId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   const { data: channels = [] } = useQuery({
@@ -170,7 +173,9 @@ function ChatTab({ groupId }: { groupId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("messages")
-        .select("id, content, user_id, is_system, created_at, profiles:profiles(id, full_name, avatar_url)")
+        .select(
+          "id, content, user_id, is_system, pinned, reply_to, created_at, profiles:profiles(id, full_name, avatar_url), message_reactions(id, emoji, user_id)",
+        )
         .eq("channel_id", activeId!)
         .order("created_at")
         .limit(200);
@@ -181,13 +186,15 @@ function ChatTab({ groupId }: { groupId: string }) {
 
   useEffect(() => {
     if (!activeId) return;
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ["messages", activeId] });
     const channel = supabase
       .channel(`messages-${activeId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `channel_id=eq.${activeId}` },
-        () => queryClient.invalidateQueries({ queryKey: ["messages", activeId] }),
+        invalidate,
       )
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, invalidate)
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -198,14 +205,40 @@ function ChatTab({ groupId }: { groupId: string }) {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length]);
 
+  const byId = new Map(messages.map((m) => [m.id, m]));
+  const pinned = messages.filter((m) => m.pinned);
+
   async function send() {
     if (!user || !activeId || !draft.trim()) return;
     const content = draft.trim();
     setDraft("");
-    const { error } = await supabase
-      .from("messages")
-      .insert({ group_id: groupId, channel_id: activeId, user_id: user.id, content });
+    const parent = replyTo;
+    setReplyTo(null);
+    const { error } = await supabase.from("messages").insert({
+      group_id: groupId,
+      channel_id: activeId,
+      user_id: user.id,
+      content,
+      reply_to: parent,
+    });
     if (error) toast.error(friendlyError(error, "Message didn't send."));
+  }
+
+  async function toggleReaction(messageId: string, emoji: string, mine: string | undefined) {
+    if (!user) return;
+    const { error } = mine
+      ? await supabase.from("message_reactions").delete().eq("id", mine)
+      : await supabase
+          .from("message_reactions")
+          .insert({ message_id: messageId, group_id: groupId, user_id: user.id, emoji });
+    if (error) toast.error(friendlyError(error, "That reaction didn't save."));
+    else queryClient.invalidateQueries({ queryKey: ["messages", activeId] });
+  }
+
+  async function togglePin(messageId: string, next: boolean) {
+    const { error } = await supabase.from("messages").update({ pinned: next }).eq("id", messageId);
+    if (error) toast.error(friendlyError(error, "Only the author or a group admin can pin messages."));
+    else queryClient.invalidateQueries({ queryKey: ["messages", activeId] });
   }
 
   return (
@@ -244,7 +277,21 @@ function ChatTab({ groupId }: { groupId: string }) {
         )}
       </aside>
 
-      <div className="surface-card flex h-[520px] flex-col p-4">
+      <div className="surface-card flex h-[560px] flex-col p-4">
+        {pinned.length > 0 && (
+          <div className="mb-3 rounded-lg border border-border/60 bg-accent/30 p-2">
+            <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase text-muted-foreground">
+              <Pin className="size-3" /> Pinned
+            </p>
+            <div className="space-y-1">
+              {pinned.map((m) => (
+                <p key={m.id} className="truncate text-xs text-muted-foreground">
+                  {m.content}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex-1 space-y-3 overflow-y-auto pr-1">
           {messages.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
@@ -260,18 +307,77 @@ function ChatTab({ groupId }: { groupId: string }) {
                   </p>
                 );
               }
+              const reactions = (m.message_reactions ?? []) as { id: string; emoji: string; user_id: string }[];
+              const grouped = new Map<string, { count: number; mine?: string }>();
+              for (const r of reactions) {
+                const entry = grouped.get(r.emoji) ?? { count: 0 };
+                entry.count += 1;
+                if (r.user_id === user?.id) entry.mine = r.id;
+                grouped.set(r.emoji, entry);
+              }
+              const parent = m.reply_to ? byId.get(m.reply_to) : undefined;
               return (
-                <div key={m.id} className="flex gap-3">
+                <div key={m.id} className="group flex gap-3">
                   <UserAvatar name={prof?.full_name} url={prof?.avatar_url} className="size-8" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground">
                       {prof?.full_name || "Member"} ·{" "}
                       {new Date(m.created_at).toLocaleTimeString([], {
                         hour: "numeric",
                         minute: "2-digit",
                       })}
+                      {m.pinned && <span className="ml-2 text-primary">pinned</span>}
                     </p>
+                    {parent && (
+                      <p className="mt-0.5 truncate border-l-2 border-border pl-2 text-xs text-muted-foreground">
+                        replying to: {parent.content}
+                      </p>
+                    )}
                     <p className="whitespace-pre-wrap break-words text-sm">{m.content}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {[...grouped.entries()].map(([emoji, info]) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => void toggleReaction(m.id, emoji, info.mine)}
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-xs",
+                            info.mine ? "border-primary/60 bg-primary/10" : "border-border/60",
+                          )}
+                        >
+                          {emoji} {info.count}
+                        </button>
+                      ))}
+                      <span className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                        {REACTIONS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            aria-label={`React ${emoji}`}
+                            onClick={() => void toggleReaction(m.id, emoji, grouped.get(emoji)?.mine)}
+                            className="rounded-full px-1 text-xs hover:bg-accent"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          aria-label="Reply"
+                          onClick={() => setReplyTo(m.id)}
+                          className="rounded-full p-1 hover:bg-accent"
+                        >
+                          <Reply className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={m.pinned ? "Unpin" : "Pin"}
+                          onClick={() => void togglePin(m.id, !m.pinned)}
+                          className="rounded-full p-1 hover:bg-accent"
+                        >
+                          <Pin className="size-3.5" />
+                        </button>
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -279,6 +385,16 @@ function ChatTab({ groupId }: { groupId: string }) {
           )}
           <div ref={endRef} />
         </div>
+        {replyTo && (
+          <div className="mt-2 flex items-center justify-between rounded-md bg-accent/40 px-3 py-1.5 text-xs">
+            <span className="truncate text-muted-foreground">
+              Replying to: {byId.get(replyTo)?.content ?? "message"}
+            </span>
+            <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground">
+              Cancel
+            </button>
+          </div>
+        )}
         <form
           className="mt-3 flex gap-2"
           onSubmit={(e) => {
@@ -295,6 +411,7 @@ function ChatTab({ groupId }: { groupId: string }) {
             <Send className="size-4" />
           </Button>
         </form>
+
       </div>
     </div>
   );
