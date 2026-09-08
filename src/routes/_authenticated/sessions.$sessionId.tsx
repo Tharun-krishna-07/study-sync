@@ -182,13 +182,26 @@ function SessionDetail() {
           {state === "upcoming" && <span>· starts in {countdown(session.start_time)}</span>}
           {state === "live" && <span>· ends in {countdown(session.end_time)}</span>}
         </p>
-        {session.meeting_url && (
-          <Button asChild variant="secondary" size="sm">
-            <a href={session.meeting_url} target="_blank" rel="noreferrer">
-              <Video className="size-4" /> Open meeting link
-            </a>
-          </Button>
+        {session.meeting_url ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Video call room</p>
+              <p className="text-xs text-muted-foreground">
+                Open the call and study together while your minutes are tracked here.
+              </p>
+            </div>
+            <Button asChild>
+              <a href={session.meeting_url} target="_blank" rel="noreferrer">
+                <Video className="size-4" /> Join the call
+              </a>
+            </Button>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-border/60 bg-muted/40 p-4 text-xs text-muted-foreground">
+            No call link added for this session yet — whoever created it can add a Meet or Zoom link.
+          </p>
         )}
+
       </header>
 
       <section className="surface-card space-y-3 p-5">
